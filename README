@@ -1,0 +1,65 @@
+Description
+
+Une application web où l'utilisateur téléverse des documents (cours, règlements, FAQ, fiches) et pose des questions en français. L'IA répond en s'appuyant uniquement sur le contenu de ces documents, grâce à la technique du RAG (Retrieval-Augmented Generation).
+
+Objectifs d'apprentissage
+IA : embeddings, recherche sémantique, chunking, RAG, prompt engineering, limites des LLM (hallucinations, latence, coût).
+DevOps : Docker, Docker Compose, réseaux et volumes, CI/CD avec GitHub Actions, déploiement sur un VPS, monitoring.
+Stack technique
+Couche	Technologie
+Frontend	Next.js
+Backend	FastAPI
+Base de données	PostgreSQL + pgvector
+Tâches de fond	Celery + Redis
+LLM	Ollama (local) ou API externe
+Reverse proxy	Nginx
+CI/CD	GitHub Actions
+Monitoring	Prometheus + Grafana
+
+Chaque service tourne dans son propre conteneur Docker, orchestré par Docker Compose.
+
+Étapes
+API FastAPI + PostgreSQL dans Docker Compose
+Frontend Next.js conteneurisé
+Endpoint de chat avec un LLM
+RAG : upload de documents, embeddings, pgvector
+Worker asynchrone pour l'indexation
+CI/CD avec GitHub Actions
+Déploiement sur un VPS et monitoring
+Configuration requise
+Minimum : 8 Go de RAM, SSD, LLM via API externe.
+Confortable : 16 Go de RAM pour un modèle local 3B à 8B avec Ollama.
+
+
+## Démarrage
+
+```bash
+cp .env.example .env        # puis changer le mot de passe
+docker compose up --build
+```
+
+- Application : http://localhost
+- Santé de l'API : http://localhost/api/health/db
+- Docs Swagger : http://localhost/api/docs
+
+## Tester la chaîne complète (API, Redis, worker)
+
+```bash
+curl -X POST http://localhost/api/tasks/ping
+curl http://localhost/api/tasks/<task_id>
+```
+
+## LLM local (optionnel)
+
+```bash
+docker compose --profile local-llm up
+```
+
+## Commandes utiles
+
+```bash
+docker compose logs -f api
+docker compose exec db psql -U documind -d documind
+docker compose down        # garde les données
+docker compose down -v     # supprime aussi les volumes
+```
