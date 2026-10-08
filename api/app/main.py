@@ -5,7 +5,7 @@ from sqlalchemy import text
 from app.core.db import engine
 from app.worker import celery_app, ping
 
-app = FastAPI(title="Kwana API")
+app = FastAPI(title="Kwana API", root_path="/api")
 
 
 @app.get("/health")
