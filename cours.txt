@@ -1,0 +1,7 @@
+Docker est une plateforme qui permet d'empaqueter une application avec toutes ses dépendances dans un conteneur. Un conteneur partage le noyau du système hôte, ce qui le rend bien plus léger qu'une machine virtuelle.
+
+Docker Compose permet de décrire plusieurs conteneurs dans un seul fichier et de les lancer ensemble. Chaque service a son image, ses variables d'environnement, ses volumes et ses ports.
+
+Un volume Docker sert à conserver des données au-delà de la vie d'un conteneur. Sans volume, tout ce qui est écrit dans le conteneur disparaît quand il est supprimé.
+
+PostgreSQL est une base de données relationnelle. L'extension pgvector lui ajoute un type vecteur et des opérateurs de distance, ce qui permet la recherche par similarité sémantique.
