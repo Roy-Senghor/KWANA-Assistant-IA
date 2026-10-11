@@ -66,3 +66,14 @@ def upload_document(file: UploadFile, db: Session = Depends(get_db)):
     db.commit()
     process_document.delay(doc.id)
     return serialize(doc)
+
+@router.delete("/{document_id}", status_code=204)
+def delete_document(document_id: int, db: Session = Depends(get_db)):
+    doc = db.get(Document, document_id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Document introuvable")
+
+    path = Path(settings.upload_dir) / f"{doc.id}{Path(doc.filename).suffix.lower()}"
+    db.delete(doc)  # supprime aussi les chunks (cascade)
+    db.commit()
+    path.unlink(missing_ok=True)
