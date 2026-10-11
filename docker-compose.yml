@@ -20,6 +20,7 @@ services:
     volumes:
       - ./api/app:/code/app
       - uploads:/data/uploads
+      - models:/models
     depends_on:
       db:
         condition: service_healthy

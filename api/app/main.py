@@ -6,7 +6,7 @@ from sqlalchemy import text
 
 import app.models  # noqa: F401
 from app.core.db import Base, engine
-from app.routers import documents
+from app.routers import documents, search
 from app.worker import celery_app, ping
 
 
@@ -18,7 +18,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Kwana API", lifespan=lifespan)
 app.include_router(documents.router)
-
+app.include_router(search.router)
 
 @app.get("/health")
 def health():
