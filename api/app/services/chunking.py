@@ -15,4 +15,9 @@ def split_text(text: str, size: int = 800, overlap: int = 150) -> list[str]:
         if end >= len(text):
             break
         start = max(end - overlap, start + 1)
+        if text[start - 1] != " ":
+            # on avance jusqu'au début du mot suivant, pour ne pas couper un mot
+            space = text.find(" ", start, end)
+            if space != -1:
+                start = space + 1
     return chunks

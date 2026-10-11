@@ -14,13 +14,18 @@ services:
       retries: 10
 
   api:
-    build: ./api
+    build:
+      context: ./api
+      args:
+        INSTALL_DEV: "true"
     env_file: .env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./api/app:/code/app
       - uploads:/data/uploads
       - models:/models
+      - ./api/tests:/code/tests
+
     depends_on:
       db:
         condition: service_healthy
