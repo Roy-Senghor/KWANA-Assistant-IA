@@ -1,13 +1,12 @@
 from contextlib import asynccontextmanager
 
 from celery.result import AsyncResult
-from fastapi import Depends, FastAPI
-from sqlalchemy import select, text
-from sqlalchemy.orm import Session
+from fastapi import FastAPI
+from sqlalchemy import text
 
-import app.models  # noqa: F401  (enregistre les modèles)
-from app.core.db import Base, engine, get_db
-from app.models import Document
+import app.models  # noqa: F401
+from app.core.db import Base, engine
+from app.routers import documents
 from app.worker import celery_app, ping
 
 
@@ -18,6 +17,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Kwana API", lifespan=lifespan)
+app.include_router(documents.router)
 
 
 @app.get("/health")
@@ -45,9 +45,3 @@ def launch_ping():
 def task_status(task_id: str):
     result = AsyncResult(task_id, app=celery_app)
     return {"state": result.state, "result": result.result if result.ready() else None}
-
-
-@app.get("/documents")
-def list_documents(db: Session = Depends(get_db)):
-    docs = db.scalars(select(Document).order_by(Document.id.desc())).all()
-    return [{"id": d.id, "filename": d.filename, "status": d.status} for d in docs]
