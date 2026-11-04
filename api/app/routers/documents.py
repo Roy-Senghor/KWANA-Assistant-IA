@@ -8,6 +8,8 @@ from app.core.config import settings
 from app.core.db import get_db
 from app.models import Document
 from app.worker import process_document
+import hashlib
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -50,12 +52,14 @@ def upload_document(file: UploadFile, db: Session = Depends(get_db)):
     upload_dir.mkdir(parents=True, exist_ok=True)
     dest = upload_dir / f"{doc.id}{ext}"
 
+    digest = hashlib.sha256()
     size = 0
     with dest.open("wb") as out:
         while chunk := file.file.read(1024 * 1024):
             size += len(chunk)
             if size > MAX_SIZE:
                 break
+            digest.update(chunk)
             out.write(chunk)
 
     if size > MAX_SIZE:
@@ -63,7 +67,29 @@ def upload_document(file: UploadFile, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=413, detail="Fichier trop volumineux (20 Mo max)")
 
-    db.commit()
+    if size == 0:
+        dest.unlink(missing_ok=True)
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Le fichier est vide.")
+
+    content_hash = digest.hexdigest()
+    existing_id = db.scalar(select(Document.id).where(Document.content_hash == content_hash))
+    if existing_id is not None:
+        dest.unlink(missing_ok=True)
+        db.rollback()
+        raise HTTPException(
+            status_code=409, detail=f"Ce document existe déjà (n°{existing_id})."
+        )
+
+    doc.content_hash = content_hash
+    try:
+        db.commit()
+    except IntegrityError:
+        # deux envois identiques simultanés : l'index unique a tranché
+        db.rollback()
+        dest.unlink(missing_ok=True)
+        raise HTTPException(status_code=409, detail="Ce document existe déjà.")
+
     process_document.delay(doc.id)
     return serialize(doc)
 
