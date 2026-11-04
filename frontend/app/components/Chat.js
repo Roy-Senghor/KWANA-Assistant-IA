@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useSettings } from "./SettingsProvider";
 
 const MODE_LABELS = {
   documents: "D'après tes documents",
@@ -7,10 +8,10 @@ const MODE_LABELS = {
 };
 
 export default function Chat() {
+  const { settings, update } = useSettings();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [general, setGeneral] = useState(true);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -21,10 +22,13 @@ export default function Chat() {
     const question = input.trim();
     if (!question || loading) return;
 
-    const history = messages
-      .filter((m) => !m.error)
-      .slice(-6)
-      .map((m) => ({ role: m.role, content: m.text }));
+    const history =
+      settings.historySize === 0
+        ? []
+        : messages
+            .filter((m) => !m.error)
+            .slice(-settings.historySize)
+            .map((m) => ({ role: m.role, content: m.text }));
 
     setMessages((m) => [...m, { role: "user", text: question }]);
     setInput("");
@@ -34,7 +38,14 @@ export default function Chat() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, history, general_knowledge: general }),
+        body: JSON.stringify({
+          question,
+          history,
+          general_knowledge: settings.general,
+          top_k: settings.topK,
+          min_score: settings.minScore,
+          style: settings.style,
+        }),
       });
       if (!res.ok) throw new Error("Le service n'a pas pu répondre. Réessaie dans un instant.");
       const data = await res.json();
@@ -78,11 +89,14 @@ export default function Chat() {
         <label>
           <input
             type="checkbox"
-            checked={general}
-            onChange={(e) => setGeneral(e.target.checked)}
+            checked={settings.general}
+            onChange={(e) => update({ general: e.target.checked })}
           />{" "}
           Autoriser les réponses hors de mes documents
         </label>
+        <button className="link" onClick={() => setMessages([])} disabled={messages.length === 0}>
+          Nouvelle conversation
+        </button>
       </div>
 
       <div className="composer">

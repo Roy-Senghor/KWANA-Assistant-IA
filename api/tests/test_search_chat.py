@@ -2,6 +2,13 @@ import pytest
 
 from app.routers.chat import CONDENSE_PROMPT, NO_ANSWER, SYSTEM_GENERAL, SYSTEM_STRICT
 
+from app.routers.chat import (
+    CONDENSE_PROMPT,
+    NO_ANSWER,
+    STYLE_INSTRUCTIONS,
+    SYSTEM_GENERAL,
+    SYSTEM_STRICT,
+)
 
 @pytest.fixture
 def query_is_vector_0(monkeypatch, unit_vector):
@@ -236,3 +243,39 @@ def test_chat_returns_502_when_llm_fails(
     res = client.post("/chat", json={"question": "Une question"})
 
     assert res.status_code == 502
+
+def mid_vector():
+    """Vecteur dont la similarité avec unit_vector(0) vaut 0,6."""
+    v = [0.0] * 384
+    v[0], v[1] = 0.6, 0.8
+    return v
+
+
+def test_min_score_can_be_changed_per_request(
+    client, add_document, query_is_vector_0, fake_llm
+):
+    add_document("cours.txt", [("Passage moyennement proche.", mid_vector())])
+    fake_llm.answer = "Réponse [1]."
+
+    strict = client.post("/chat", json={"question": "Q", "min_score": 0.9}).json()
+    assert strict["mode"] == "general"  # 0,6 < 0,9 : passage écarté
+    assert "<extraits>" not in fake_llm.calls[0]["user"]
+
+    lenient = client.post("/chat", json={"question": "Q", "min_score": 0.5}).json()
+    assert lenient["mode"] == "documents"
+    assert "<extraits>" in fake_llm.calls[1]["user"]
+
+
+def test_chat_rejects_out_of_range_min_score(client):
+    assert client.post("/chat", json={"question": "x", "min_score": 5}).status_code == 422
+    assert client.post("/chat", json={"question": "x", "min_score": -1}).status_code == 422
+
+
+def test_concise_style_is_added_to_the_prompt(client, query_is_vector_0, fake_llm):
+    client.post("/chat", json={"question": "Bonjour", "style": "concise"})
+
+    assert STYLE_INSTRUCTIONS["concise"] in fake_llm.calls[0]["system"]
+
+
+def test_chat_rejects_unknown_style(client):
+    assert client.post("/chat", json={"question": "x", "style": "poetique"}).status_code == 422

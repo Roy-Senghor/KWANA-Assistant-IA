@@ -48,6 +48,11 @@ CONDENSE_PROMPT = """Tu reformules des questions de suivi.
 Réponds uniquement par la question reformulée, sans commentaire.
 Si la question est déjà autonome, recopie-la telle quelle."""
 
+STYLE_INSTRUCTIONS = {
+    "concise": "Style : réponds en trois phrases au maximum, sans détails superflus.",
+    "balanced": "",
+    "detailed": "Style : donne une réponse détaillée et structurée, avec des exemples quand c'est utile.",
+}
 
 class Message(BaseModel):
     role: Literal["user", "assistant"]
@@ -59,6 +64,8 @@ class ChatRequest(BaseModel):
     top_k: int = Field(default=4, ge=1, le=10)
     history: list[Message] = Field(default_factory=list, max_length=20)
     general_knowledge: bool = True
+    min_score: float | None = Field(default=None, ge=0, le=1)
+    style: Literal["concise", "balanced", "detailed"] = "balanced"
 
 
 def condense_question(history: list[dict], question: str) -> str:
@@ -81,8 +88,8 @@ def chat(payload: ChatRequest, db: Session = Depends(get_db)):
     search_query = condense_question(history, payload.question)
 
     passages = retrieve(db, search_query, payload.top_k)
-    relevant = [p for p in passages if p["score"] >= settings.min_score]
-
+    threshold = payload.min_score if payload.min_score is not None else settings.min_score
+    relevant = [p for p in passages if p["score"] >= threshold]
     if relevant:
         system = SYSTEM_HYBRID if payload.general_knowledge else SYSTEM_STRICT
         context = "\n\n".join(
@@ -95,7 +102,9 @@ def chat(payload: ChatRequest, db: Session = Depends(get_db)):
         user_message = payload.question
     else:
         return {"answer": NO_ANSWER, "sources": [], "mode": "none"}
-
+    style = STYLE_INSTRUCTIONS[payload.style]
+    if style:
+        system = f"{system}\n{style}"
     try:
         answer = generate(system, user_message, history)
     except Exception:
