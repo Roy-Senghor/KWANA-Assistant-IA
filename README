@@ -1,3 +1,5 @@
+![CI](https://github.com/Roy-Senghor/kwana/actions/workflows/ci.yml/badge.svg)
+
 Description
 
 Une application web où l'utilisateur téléverse des documents (cours, règlements, FAQ, fiches) et pose des questions en français. L'IA répond en s'appuyant uniquement sur le contenu de ces documents, grâce à la technique du RAG (Retrieval-Augmented Generation).
