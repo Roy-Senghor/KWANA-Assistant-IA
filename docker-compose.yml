@@ -21,10 +21,9 @@ services:
     env_file: .env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./api/app:/code/app
+      - ./api:/code
       - uploads:/data/uploads
       - models:/models
-      - ./api/tests:/code/tests
 
     depends_on:
       db:

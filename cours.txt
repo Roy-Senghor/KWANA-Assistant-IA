@@ -5,3 +5,12 @@ Docker Compose permet de décrire plusieurs conteneurs dans un seul fichier et d
 Un volume Docker sert à conserver des données au-delà de la vie d'un conteneur. Sans volume, tout ce qui est écrit dans le conteneur disparaît quand il est supprimé.
 
 PostgreSQL est une base de données relationnelle. L'extension pgvector lui ajoute un type vecteur et des opérateurs de distance, ce qui permet la recherche par similarité sémantique.
+
+Les concepts d’épistémologie
+
+L'épistémologie est une branche de la philosophie qui étudie la nature, les fondements, les méthodes et les limites de la connaissance. 
+En épistémologie on se pose 3 questions : 
+-	Qu’est-ce que connaitre ?
+-	Comment acquérir la connaissance ?
+-	Qu’est ce qui valide la connaissance ?
+-	
